@@ -1,0 +1,60 @@
+services:
+ postgres:
+    image: postgres:18.3-alpine
+    container_name: ecommerce-postgres
+    restart: unless-stopped
+
+    ports:
+      - "5432:5432"
+
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+
+    volumes:
+      - pgdata:/var/lib/postgresql
+      - ./scripts/init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+ mongodb:
+   image: mongo:latest
+   container_name: ecommerce-mongodb
+   restart: unless-stopped
+   ports:
+     - "27017:27017"
+   environment:
+     MONGO_INITDB_ROOT_USERNAME: admin
+     MONGO_INITDB_ROOT_PASSWORD: root123
+     MONGO_INITDB_DATABASE: notification_db
+   volumes:
+     - mongodata:/data/db
+ redis:
+   image: redis:7-alpine
+   container_name: ecommerce-redis
+   restart: unless-stopped
+   ports:
+     - "6379:6379"
+   command: redis-server --requirepass redis123 --appendonly yes
+   volumes:
+     - redisdata:/data
+ rabbitmq:
+   image: rabbitmq:3-management-alpine
+   container_name: ecommerce-rabbitmq
+   restart: unless-stopped
+   ports:
+     - "5672:5672"
+     - "15672:15672"
+   environment:
+     RABBITMQ_DEFAULT_USER: admin
+     RABBITMQ_DEFAULT_PASS: rabbit123
+   volumes:
+     - rabbitdata:/var/lib/rabbitmq
+volumes:
+  pgdata:
+  mongodata:
+  redisdata:
+  rabbitdata:
