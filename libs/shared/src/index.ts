@@ -6,3 +6,5 @@ export * from './interfaces/api-response.interface';
 export * from './constants/services';
 // Events
 export * from './events/order.events';
+// Database Modules
+export * from './database/database.module';
