@@ -1,12 +1,41 @@
-import { Controller, Get } from '@nestjs/common';
-import { AuthServiceService } from './auth-service.service';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
+import { RegisterDto } from './application/dtos/register.dto';
+import { AuthService } from './application/auth.service';
+import { LoginDto } from './application/dtos/login.dto';
+import { CurrentUser } from './infrastructure/decorators/current-user.decorator';
+import { JwtAuthGuard } from './infrastructure/guards/jwt-auth.guard';
 
-@Controller()
+@Controller('/auth')
 export class AuthServiceController {
-  constructor(private readonly authServiceService: AuthServiceService) {}
+  constructor(private readonly authService: AuthService) {}
 
-  @Get()
-  getInfo() {
-    return this.authServiceService.getInfo();
+  @Post('register')
+  async register(@Body() dto: RegisterDto) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    return await this.authService.register(dto);
+  }
+
+  @Post('login')
+  @HttpCode(HttpStatus.OK)
+  async login(@Body() dto: LoginDto) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    return await this.authService.login(dto);
+  }
+
+  @Get('profile')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  async getProfile(
+    @CurrentUser() user: { id: string; email: string; role: string },
+  ) {
+    return await this.authService.getProfile(user.id);
   }
 }
