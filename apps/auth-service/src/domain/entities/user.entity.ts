@@ -5,12 +5,8 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-
-export enum UserRole {
-  USER = 'USER',
-  ADMIN = 'ADMIN',
-  SELLER = 'SELLER',
-}
+import { UserRole } from '../enums/user-role.enum';
+import { UserStatus } from '../enums/user-status.enum';
 
 @Entity('users')
 export class User {
@@ -23,6 +19,9 @@ export class User {
   @Column({ type: 'varchar', nullable: false })
   passwordHash: string;
 
+  @Column({ type: 'varchar', nullable: false })
+  fullName: string;
+
   @Column({
     type: 'enum',
     enum: UserRole,
@@ -32,14 +31,20 @@ export class User {
   role: UserRole;
 
   @Column({
-    type: 'varchar',
+    type: 'enum',
+    enum: UserStatus,
+    default: UserStatus.ACTIVE,
     nullable: false,
   })
-  fullName: string;
+  status: UserStatus;
 
   @CreateDateColumn()
   createdAt: Date;
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  constructor(data: Partial<User>) {
+    Object.assign(this, data);
+  }
 }
