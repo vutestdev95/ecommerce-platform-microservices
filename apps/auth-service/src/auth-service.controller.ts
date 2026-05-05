@@ -38,4 +38,18 @@ export class AuthServiceController {
   ) {
     return await this.authService.getProfile(user.id);
   }
+
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  async refresh(@Body('refreshToken') refreshToken: string): Promise<any> {
+    return await this.authService.refreshTokens(refreshToken);
+  }
+
+  @Post('logout')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async logout(@CurrentUser() user: { id: string }) {
+    await this.authService.logout(user.id);
+    return { message: 'Logged out successfully' };
+  }
 }
