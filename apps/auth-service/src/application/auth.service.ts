@@ -13,7 +13,8 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';
-import { JwtPayload } from '../infrastructure/strategies/jwt.strategy';
+
+import { JwtPayload } from '@app/shared';
 
 @Injectable()
 export class AuthService {
@@ -115,6 +116,17 @@ export class AuthService {
 
   async logout(userId: string): Promise<void> {
     await this.redis.del(`refresh_token:${userId}`);
+  }
+
+  async getAllUsers() {
+    const users = await this.userRepo.find({
+      select: ['id', 'email', 'fullName', 'role', 'status', 'createdAt'],
+    });
+
+    return {
+      total: users.length,
+      users,
+    };
   }
 
   private async generateTokens(user: User) {

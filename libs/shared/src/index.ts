@@ -8,3 +8,6 @@ export * from './constants/services';
 export * from './events/order.events';
 // Database Modules
 export * from './database/database.module';
+
+export * from './enums/user-role.enum';
+export * from './interfaces/jwt.interface';

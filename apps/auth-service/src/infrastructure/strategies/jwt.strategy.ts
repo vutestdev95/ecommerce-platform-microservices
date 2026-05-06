@@ -2,12 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
-
-export interface JwtPayload {
-  sub: string;
-  email: string;
-  role: string;
-}
+import { JwtPayload, JwtResponse } from '@app/shared';
 
 @Injectable()
 export class JWTStrategy extends PassportStrategy(Strategy) {
@@ -18,7 +13,7 @@ export class JWTStrategy extends PassportStrategy(Strategy) {
       secretOrKey: configService.get<string>('JWT_ACCESS_SECRET') || 'fallback',
     });
   }
-  validate(payload: JwtPayload): unknown {
+  validate(payload: JwtPayload): JwtResponse {
     return {
       id: payload.sub,
       email: payload.email,
