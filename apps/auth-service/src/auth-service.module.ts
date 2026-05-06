@@ -9,6 +9,7 @@ import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { JWTStrategy } from './infrastructure/strategies/jwt.strategy';
 import { RedisAuthModule } from './infrastructure/redis/redis.module';
+import { Reflector } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { RedisAuthModule } from './infrastructure/redis/redis.module';
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({}),
     RedisAuthModule,
+    Reflector,
   ],
   controllers: [AuthServiceController],
   providers: [AuthService, JWTStrategy],

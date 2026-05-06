@@ -12,6 +12,9 @@ import { AuthService } from './application/auth.service';
 import { LoginDto } from './application/dtos/login.dto';
 import { CurrentUser } from './infrastructure/decorators/current-user.decorator';
 import { JwtAuthGuard } from './infrastructure/guards/jwt-auth.guard';
+import { Roles } from './infrastructure/decorators/roles.decorator';
+import { UserRole } from '@app/shared';
+import { RoleGuard } from './infrastructure/guards/role.guard';
 
 @Controller('/auth')
 export class AuthServiceController {
@@ -51,5 +54,12 @@ export class AuthServiceController {
   async logout(@CurrentUser() user: { id: string }) {
     await this.authService.logout(user.id);
     return { message: 'Logged out successfully' };
+  }
+
+  @Get('admin/users')
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(UserRole.ADMIN)
+  async getAllUsers() {
+    return await this.authService.getAllUsers();
   }
 }
