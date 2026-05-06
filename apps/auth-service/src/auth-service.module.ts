@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AuthServiceController } from './auth-service.controller';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DataBaseModule } from '@app/shared';
 import { User } from './domain/entities/user.entity';
@@ -9,7 +9,8 @@ import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { JWTStrategy } from './infrastructure/strategies/jwt.strategy';
 import { RedisAuthModule } from './infrastructure/redis/redis.module';
-import { Reflector } from '@nestjs/core';
+import { APP_GUARD, Reflector } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
 @Module({
   imports: [
@@ -22,8 +23,27 @@ import { Reflector } from '@nestjs/core';
     JwtModule.register({}),
     RedisAuthModule,
     Reflector,
+    ThrottlerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        throttlers: [
+          {
+            ttl: (config.get('THROTTLE_TTL') || 60) * 1000,
+            limit: config.get('THROTTLE_LIMIT') || 100,
+          },
+        ],
+      }),
+    }),
   ],
   controllers: [AuthServiceController],
-  providers: [AuthService, JWTStrategy],
+  providers: [
+    AuthService,
+    JWTStrategy,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AuthServiceModule {}

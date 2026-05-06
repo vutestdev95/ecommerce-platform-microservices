@@ -16,6 +16,17 @@ import Redis from 'ioredis';
 
 import { JwtPayload } from '@app/shared';
 
+export interface AuthTokens {
+  accessToken: string;
+  refreshToken: string;
+  user: {
+    id: string;
+    email: string;
+    fullName: string;
+    role: string;
+  };
+}
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -27,7 +38,7 @@ export class AuthService {
     private readonly redis: Redis,
   ) {}
 
-  async register(dto: RegisterDto): Promise<any> {
+  async register(dto: RegisterDto): Promise<AuthTokens> {
     const existingUser = await this.userRepo.findOne({
       where: {
         email: dto.email,
@@ -53,7 +64,7 @@ export class AuthService {
     return this.generateTokens(savedUser);
   }
 
-  async login(dto: LoginDto): Promise<any> {
+  async login(dto: LoginDto): Promise<AuthTokens> {
     const user = await this.userRepo.findOne({
       where: {
         email: dto.email,
@@ -76,7 +87,7 @@ export class AuthService {
     return this.generateTokens(user);
   }
 
-  async refreshTokens(refreshToken: string): Promise<any> {
+  async refreshTokens(refreshToken: string): Promise<AuthTokens> {
     try {
       const payload: JwtPayload = this.jwtService.verify(refreshToken, {
         secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
@@ -129,7 +140,7 @@ export class AuthService {
     };
   }
 
-  private async generateTokens(user: User) {
+  private async generateTokens(user: User): Promise<AuthTokens> {
     const payload = {
       sub: user.id,
       email: user.email,
