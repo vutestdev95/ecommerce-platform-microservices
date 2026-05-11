@@ -23,6 +23,12 @@ export class Product {
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: false })
   price: number;
 
+  @Column({ type: 'varchar', unique: true, nullable: false })
+  sku: string;
+
+  @Column({ type: 'simple-array', nullable: true })
+  images: string[];
+
   @Column({ type: 'boolean', default: true, nullable: false })
   isActive: boolean;
 

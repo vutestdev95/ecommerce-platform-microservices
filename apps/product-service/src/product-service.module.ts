@@ -1,21 +1,20 @@
-import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { DataBaseModule } from '@app/shared';
+import { Product } from './domain/entities/product.entity';
+import { Category } from './domain/entities/category.entity';
 import { ProductServiceController } from './product-service.controller';
-import { ProductServiceService } from './product-service.service';
-import { Product } from './entities/product.entity';
-import { Category } from './entities/category.entity';
+import { ProductService } from './application/services/product.service';
+import { CategoryService } from './application/services/category.service';
+import { DataBaseModule } from '@app/shared';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-    }),
+    ConfigModule.forRoot({ isGlobal: true }),
     DataBaseModule.forRoot('PRODUCT_DB_NAME'),
     TypeOrmModule.forFeature([Product, Category]),
   ],
   controllers: [ProductServiceController],
-  providers: [ProductServiceService],
+  providers: [ProductService, CategoryService],
 })
 export class ProductServiceModule {}
