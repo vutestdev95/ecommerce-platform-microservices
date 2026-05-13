@@ -20,7 +20,8 @@
     "start:payment": "nest start payment-service --watch",
     "start:inventory": "nest start inventory-service --watch",
     "start:notification": "nest start notification-service --watch",
-    "start:all": "concurrently --names gw,auth,prod,order,pay,inv,noti --prefix-colors blue,green,yellow,red,magenta,cyan,white \"npm run start:gateway\" \"npm run start:auth\" \"npm run start:product\" \"npm run start:order\" \"npm run start:payment\" \"npm run start:inventory\" \"npm run start:notification\""
+    "start:all": "concurrently --names gw,auth,prod,order,pay,inv,noti --prefix-colors blue,green,yellow,red,magenta,cyan,white \"npm run start:gateway\" \"npm run start:auth\" \"npm run start:product\" \"npm run start:order\" \"npm run start:payment\" \"npm run start:inventory\" \"npm run start:notification\"",
+    "seed:product": "ts-node -r tsconfig-paths/register apps/product-service/src/seeds/product-seed.ts"
   },
   "dependencies": {
     "@nestjs-modules/ioredis": "^2.2.1",
