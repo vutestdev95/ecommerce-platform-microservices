@@ -9,12 +9,14 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import { ProductService } from './application/services/product.service';
 import { CategoryService } from './application/services/category.service';
 import { CreateProductDto } from './application/dtos/create-product.dto';
 import { UpdateProductDto } from './application/dtos/update-product.dto';
 import { CreateCategoryDto } from './application/dtos/create-category.dto';
+import { QueryProductDto } from './application/dtos/query-product.dto';
 
 @Controller()
 export class ProductServiceController {
@@ -58,8 +60,8 @@ export class ProductServiceController {
   }
 
   @Get('products')
-  findAllProducts() {
-    return this.productService.findAll();
+  findAllProducts(@Query() query: QueryProductDto) {
+    return this.productService.findAll(query);
   }
 
   @Get('products/:id')

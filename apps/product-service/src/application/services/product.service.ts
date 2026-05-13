@@ -8,6 +8,11 @@ import { Product } from '../../domain/entities/product.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateProductDto } from '../dtos/create-product.dto';
 import { UpdateProductDto } from '../dtos/update-product.dto';
+import {
+  QueryProductDto,
+  SortField,
+  SortOrder,
+} from '../dtos/query-product.dto';
 
 @Injectable()
 export class ProductService {
@@ -28,16 +33,58 @@ export class ProductService {
     return this.productRepo.save(product);
   }
 
-  async findAll(isActive?: boolean): Promise<Product[]> {
-    return this.productRepo.find({
-      ...(isActive
-        ? {
-            where: { isActive },
-          }
-        : {}),
-      relations: ['category'],
-      order: { createdAt: 'DESC' },
-    });
+  async findAll(queryDto: QueryProductDto): Promise<any> {
+    const {
+      sort = SortField.CREATED_AT,
+      maxPrice,
+      minPrice,
+      order = SortOrder.DESC,
+      page = 1,
+      search,
+      limit = 20,
+      categoryId,
+    } = queryDto;
+
+    const qb = this.productRepo
+      .createQueryBuilder('product')
+      .leftJoinAndSelect('product.category', 'category')
+      .where('product.isActive = :isActive', { isActive: true });
+    if (search) {
+      qb.andWhere('product.name ILIKE :search', { search: `%${search}%` });
+    }
+
+    if (categoryId) {
+      qb.andWhere('product.categoryId = :categoryId', {
+        categoryId,
+      });
+    }
+
+    if (minPrice) {
+      qb.andWhere('product.minPrice = :minPrice', { minPrice });
+    }
+
+    if (maxPrice) {
+      qb.andWhere('product.maxPrice = :maxPrice', { maxPrice });
+    }
+
+    qb.orderBy(`product.${sort}`, order);
+
+    const total = await qb.getCount();
+
+    const skip = (page - 1) * limit;
+    qb.skip(skip).take(limit);
+
+    const products = await qb.getMany();
+
+    return {
+      data: products,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   async findOne(id: string): Promise<Product> {
