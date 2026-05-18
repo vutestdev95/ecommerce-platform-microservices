@@ -4,6 +4,8 @@ import { PORTS } from '@app/shared';
 import { ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
+import { ResponseInterceptor } from '@app/shared/interceptors/response.interceptor';
+import { HttpExceptionFilter } from '@app/shared/filters/http-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AuthServiceModule);
@@ -26,6 +28,9 @@ async function bootstrap() {
       transform: true,
     }),
   );
+
+  app.useGlobalInterceptors(new ResponseInterceptor());
+  app.useGlobalFilters(new HttpExceptionFilter());
   await app.listen(PORTS.AUTH);
   console.log(`🔐 Auth Service running on http://localhost:${PORTS.AUTH}/auth`);
 }

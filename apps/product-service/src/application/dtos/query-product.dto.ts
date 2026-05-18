@@ -1,12 +1,6 @@
-import {
-  IsEnum,
-  IsNumber,
-  IsOptional,
-  IsString,
-  IsUUID,
-  Min,
-} from 'class-validator';
+import { IsEnum, IsNumber, IsOptional, IsString, IsUUID, Min } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PaginationDto } from '@app/shared';
 
 export enum SortField {
   PRICE = 'price',
@@ -19,19 +13,7 @@ export enum SortOrder {
   DESC = 'DESC',
 }
 
-export class QueryProductDto {
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  @Min(1)
-  page?: number = 1;
-
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  @Min(1)
-  limit?: number = 20;
-
+export class QueryProductDto extends PaginationDto {
   @IsOptional()
   @IsString()
   search?: string;
@@ -60,6 +42,3 @@ export class QueryProductDto {
   @IsEnum(SortOrder)
   order?: SortOrder = SortOrder.ASC;
 }
-
-const defaultProductDto: QueryProductDto = new QueryProductDto();
-console.log(defaultProductDto);
