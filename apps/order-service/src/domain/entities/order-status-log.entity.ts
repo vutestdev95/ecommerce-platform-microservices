@@ -7,9 +7,9 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { OrderStatus } from '../types/order-status.enum';
+import { OrderStatus } from '../enums/order-status.enum';
 
-@Entity('order-status-log')
+@Entity('order-status-logs')
 export class OrderStatusLog {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -22,14 +22,15 @@ export class OrderStatusLog {
 
   @Column({
     type: 'enum',
-    nullable: false,
+    nullable: true,
     enum: OrderStatus,
+    default: OrderStatus.PENDING,
   })
   fromStatus: OrderStatus;
 
   @Column({
     type: 'enum',
-    nullable: false,
+    nullable: true,
     enum: OrderStatus,
   })
   toStatus: OrderStatus;
@@ -43,6 +44,12 @@ export class OrderStatusLog {
   @ManyToOne(() => Order, (order) => order.statusLogs)
   @JoinColumn({ name: 'orderId' })
   order: Order;
+
+  @Column({
+    type: 'uuid',
+    nullable: true,
+  })
+  changedBy?: string;
 
   @CreateDateColumn()
   createdAt: Date;

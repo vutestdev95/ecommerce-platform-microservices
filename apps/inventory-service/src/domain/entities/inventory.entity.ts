@@ -1,5 +1,6 @@
 import {
   Column,
+  CreateDateColumn,
   Entity,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
@@ -19,6 +20,13 @@ export class Inventory {
   @Column({ default: 0, type: 'int' })
   reservedQuantity: number;
 
+  @CreateDateColumn()
+  createdAt: Date;
+
   @UpdateDateColumn()
   updatedAt: Date;
+
+  get availableQuantity(): number {
+    return this.quantity - this.reservedQuantity;
+  }
 }

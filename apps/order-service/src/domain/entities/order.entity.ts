@@ -8,7 +8,7 @@ import {
 } from 'typeorm';
 import { OrderItem } from './order-item.entity';
 import { OrderStatusLog } from './order-status-log.entity';
-import { OrderStatus } from '../types/order-status.enum';
+import { OrderStatus } from '../enums/order-status.enum';
 
 @Entity('orders')
 export class Order {
@@ -49,6 +49,9 @@ export class Order {
     cascade: true,
   })
   statusLogs: OrderStatusLog[];
+
+  @Column({ type: 'text', nullable: true })
+  note: string;
 
   @CreateDateColumn()
   createdAt: Date;
