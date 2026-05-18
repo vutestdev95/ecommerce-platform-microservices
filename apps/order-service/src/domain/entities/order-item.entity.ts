@@ -24,6 +24,9 @@ export class OrderItem {
   })
   productId: string;
 
+  @Column({ type: 'varchar', nullable: false })
+  productName: string;
+
   @Column({
     type: 'int',
     nullable: false,
@@ -32,6 +35,9 @@ export class OrderItem {
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   price: number;
+
+  @Column({ type: 'decimal', precision: 12, scale: 2, nullable: false })
+  subtotal: number;
 
   @ManyToOne(() => Order, (order) => order.items)
   @JoinColumn({ name: 'orderId' })
