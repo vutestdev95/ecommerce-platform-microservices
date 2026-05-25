@@ -98,6 +98,15 @@ export class ProductService {
     return product;
   }
 
+  async findMany(ids: string[]): Promise<Product[]> {
+    return this.productRepo.find({
+      where: ids.map((id) => ({
+        id,
+      })),
+      relations: ['category'],
+    });
+  }
+
   async update(id: string, dto: UpdateProductDto): Promise<Product> {
     const product = await this.findOne(id);
 

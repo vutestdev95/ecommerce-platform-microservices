@@ -1,7 +1,9 @@
 import {
   BadRequestException,
+  Inject,
   Injectable,
   NotFoundException,
+  OnModuleInit,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Order } from '../../domain/entities/order.entity';
@@ -15,9 +17,17 @@ import {
 } from '../../domain/enums/order-status.enum';
 import { QueryOrderDto } from '../dtos/query-order.dto';
 import { UpdateStatusDto } from '../dtos/update-status.dto';
+import { SERVICES } from '@app/shared';
+import type { ClientGrpc } from '@nestjs/microservices';
+import { ClientProxy } from '@nestjs/microservices';
+import { InventoryGrpcService } from '@app/shared/interfaces/inventory-proto.interface';
+import { firstValueFrom } from 'rxjs';
+import { ProductResponse } from '@app/shared/interfaces/product-response.interface';
 
 @Injectable()
-export class OrderService {
+export class OrderService implements OnModuleInit {
+  private inventoryGrpc: InventoryGrpcService;
+
   constructor(
     @InjectRepository(Order)
     private readonly orderRepo: Repository<Order>,
@@ -27,41 +37,17 @@ export class OrderService {
 
     @InjectRepository(OrderStatusLog)
     private readonly orderStatusLogRepo: Repository<OrderStatusLog>,
+
+    @Inject(SERVICES.PRODUCT)
+    private readonly productClient: ClientProxy,
+
+    @Inject(SERVICES.INVENTORY)
+    private readonly inventoryClient: ClientGrpc,
   ) {}
 
-  async createOrder(dto: CreateOrderDto): Promise<Order> {
-    const { shippingAddress, note, userId, items } = dto;
-    const orderItems = items.map<OrderItem>((item) => {
-      const { productName, productId, quantity, price } = item;
-      const rawOrderItem = new OrderItem();
-      rawOrderItem.productId = productId;
-      rawOrderItem.productName = productName;
-      rawOrderItem.price = price;
-      rawOrderItem.quantity = quantity;
-      rawOrderItem.subtotal = price * quantity;
-      return rawOrderItem;
-    });
-
-    const initStatusLog = new OrderStatusLog();
-    initStatusLog.fromStatus = null as unknown as OrderStatus;
-    initStatusLog.toStatus = OrderStatus.PENDING;
-    initStatusLog.reason = 'Init Order';
-    initStatusLog.changedBy = userId;
-
-    const totalAmount = orderItems.reduce<number>((acr, curr) => {
-      return acr + curr.subtotal;
-    }, 0);
-
-    const order = this.orderRepo.create({
-      shippingAddress,
-      note,
-      userId,
-      items: orderItems,
-      statusLogs: [initStatusLog],
-      totalAmount,
-    });
-
-    return this.orderRepo.save(order);
+  onModuleInit() {
+    this.inventoryGrpc =
+      this.inventoryClient.getService<InventoryGrpcService>('InventoryService');
   }
 
   async findAllOrders(dto: QueryOrderDto) {
@@ -145,5 +131,82 @@ export class OrderService {
       where: { orderId: order.id },
       order: { createdAt: 'ASC' },
     });
+  }
+
+  async createOrder(dto: CreateOrderDto): Promise<Order> {
+    const { shippingAddress, note, userId, items } = dto;
+
+    const productIds = items.map((item) => item.productId);
+    console.log('Fetching products for IDs:', productIds);
+    const products = await this.getProductsByIds(productIds);
+    const productMap = new Map(
+      products.map((p: { id: string; name: string; price: number }) => [
+        p.id,
+        p,
+      ]),
+    );
+    console.log(productMap);
+
+    const orderItems = items.map((item) => {
+      const product = productMap.get(item.productId);
+      if (!product) {
+        throw new NotFoundException(`Product "${item.productId}" not found`);
+      }
+      const orderItem = new OrderItem();
+      orderItem.productId = item.productId;
+      orderItem.productName = product.name;
+      orderItem.price = Number(product.price);
+      orderItem.quantity = item.quantity;
+      orderItem.subtotal = Number(product.price) * item.quantity;
+      return orderItem;
+    });
+
+    for (const item of orderItems) {
+      await this.reserveInventory(item.productId, item.quantity);
+    }
+
+    const totalAmount = orderItems.reduce(
+      (sum, item) => sum + item.subtotal,
+      0,
+    );
+
+    const initLog = new OrderStatusLog();
+    initLog.fromStatus = null as unknown as OrderStatus;
+    initLog.toStatus = OrderStatus.PENDING;
+    initLog.reason = 'Order created';
+    initLog.changedBy = userId;
+
+    const order = this.orderRepo.create({
+      userId,
+      shippingAddress,
+      note,
+      totalAmount,
+      items: orderItems,
+      statusLogs: [initLog],
+    });
+
+    console.log(order);
+
+    return this.orderRepo.save(order);
+  }
+
+  private async getProductsByIds(ids: string[]): Promise<ProductResponse[]> {
+    return await firstValueFrom(
+      this.productClient.send('product.findMany', { ids }),
+    );
+  }
+
+  private async findOneProduct(ids: string): Promise<ProductResponse> {
+    return await firstValueFrom(
+      this.productClient.send('product.findOne', { ids }),
+    );
+  }
+
+  private async reserveInventory(productId: string, quantity: number) {
+    return firstValueFrom(this.inventoryGrpc.reserve({ productId, quantity }));
+  }
+
+  private async releaseInventory(productId: string, quantity: number) {
+    return firstValueFrom(this.inventoryGrpc.release({ productId, quantity }));
   }
 }

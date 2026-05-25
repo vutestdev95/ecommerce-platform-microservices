@@ -1,12 +1,14 @@
 import { NestFactory } from '@nestjs/core';
 import { OrderServiceModule } from './order-service.module';
-import { PORTS } from '@app/shared';
+import { ConfigService } from '@nestjs/config';
 import { ValidationPipe } from '@nestjs/common';
 import { ResponseInterceptor } from '@app/shared/interceptors/response.interceptor';
 import { HttpExceptionFilter } from '@app/shared/filters/http-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(OrderServiceModule);
+  const configService = app.get(ConfigService);
+  const port = configService.get<number>('ORDER_HTTP_PORT', 3003);
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -18,7 +20,7 @@ async function bootstrap() {
 
   app.useGlobalInterceptors(new ResponseInterceptor());
   app.useGlobalFilters(new HttpExceptionFilter());
-  await app.listen(PORTS.ORDER);
-  console.log(`🛒 Order Service running on http://localhost:${PORTS.ORDER}`);
+  await app.listen(port);
+  console.log(`🛒 Order Service running on http://localhost:${port}`);
 }
 bootstrap();
