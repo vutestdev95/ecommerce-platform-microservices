@@ -17,6 +17,7 @@ import { CreateProductDto } from './application/dtos/create-product.dto';
 import { UpdateProductDto } from './application/dtos/update-product.dto';
 import { CreateCategoryDto } from './application/dtos/create-category.dto';
 import { QueryProductDto } from './application/dtos/query-product.dto';
+import { MessagePattern, Payload } from '@nestjs/microservices';
 
 @Controller()
 export class ProductServiceController {
@@ -85,5 +86,17 @@ export class ProductServiceController {
   @Patch('products/:id/restore')
   restoreProduct(@Param('id', ParseUUIDPipe) id: string) {
     return this.productService.restore(id);
+  }
+
+  @MessagePattern('product.findOne')
+  async tcpFindOne(@Payload() data: { id: string }) {
+    const { id } = data;
+    return await this.productService.findOne(id);
+  }
+
+  @MessagePattern('product.findMany')
+  async tcpFindMany(@Payload() data: { ids: string[] }) {
+    const { ids } = data;
+    return await this.productService.findMany(ids);
   }
 }

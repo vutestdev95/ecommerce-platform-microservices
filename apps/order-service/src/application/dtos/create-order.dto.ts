@@ -16,18 +16,9 @@ class CreateOrderItemDto {
   productId: string;
 
   @IsNotEmpty()
-  @IsString()
-  productName: string;
-
-  @IsNotEmpty()
   @IsNumber()
   @Min(1)
   quantity: number;
-
-  @IsNotEmpty()
-  @IsNumber({ maxDecimalPlaces: 2 })
-  @Min(0)
-  price: number;
 }
 
 export class CreateOrderDto {

@@ -17,26 +17,9 @@ import { UpdateStatusDto } from './application/dtos/update-status.dto';
 export class OrderServiceController {
   constructor(private readonly orderService: OrderService) {}
 
-  //@IsUUID()
-  //   @IsNotEmpty()
-  //   userId: string;
-  //
-  //   @IsNotEmpty()
-  //   @IsString()
-  //   shippingAddress: string;
-  //
-  //   @IsArray()
-  //   @ArrayMinSize(1, { message: 'Order must have at least 1 item' })
-  //   @ValidateNested({ each: true })
-  //   @Type(() => CreateOrderItemDto)
-  //   items: CreateOrderItemDto[];
-  //
-  //   @IsString()
-  //   @IsOptional()
-  //   note?: string;
   @Post()
   async createOrder(@Body() dto: CreateOrderDto) {
-    await this.orderService.createOrder(dto);
+    return this.orderService.createOrder(dto);
   }
 
   @Get()

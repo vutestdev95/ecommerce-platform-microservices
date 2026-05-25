@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { AuthServiceModule } from './auth-service.module';
-import { PORTS } from '@app/shared';
+import { ConfigService } from '@nestjs/config';
 import { ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
@@ -9,6 +9,8 @@ import { HttpExceptionFilter } from '@app/shared/filters/http-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AuthServiceModule);
+  const configService = app.get(ConfigService);
+  const port = configService.get<number>('AUTH_HTTP_PORT', 3001);
 
   app.use(helmet());
 
@@ -31,7 +33,7 @@ async function bootstrap() {
 
   app.useGlobalInterceptors(new ResponseInterceptor());
   app.useGlobalFilters(new HttpExceptionFilter());
-  await app.listen(PORTS.AUTH);
-  console.log(`🔐 Auth Service running on http://localhost:${PORTS.AUTH}/auth`);
+  await app.listen(port);
+  console.log(`🔐 Auth Service running on http://localhost:${port}/auth`);
 }
 bootstrap();

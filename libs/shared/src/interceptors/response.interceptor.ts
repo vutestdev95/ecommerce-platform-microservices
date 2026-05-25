@@ -24,14 +24,18 @@ export class ResponseInterceptor<T> implements NestInterceptor<
   ): Observable<SuccessResponse<T>> | Promise<Observable<SuccessResponse<T>>> {
     return next.handle().pipe(
       map((responseData) => {
-        const data = responseData as Record<string, unknown>;
+        const isObject =
+          responseData !== null &&
+          typeof responseData === 'object' &&
+          !Array.isArray(responseData);
+        const data = isObject ? (responseData as Record<string, unknown>) : {};
 
         return {
           success: true as const,
-          data: data['data'] ?? responseData,
+          data: (data['data'] ?? responseData) as T,
           meta: (data['metadata'] ?? data['meta']) as Record<string, unknown>,
           timestamp: new Date().toISOString(),
-        } as unknown as SuccessResponse<T>;
+        };
       }),
     );
   }
