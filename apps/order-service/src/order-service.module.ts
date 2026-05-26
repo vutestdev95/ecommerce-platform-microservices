@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { OrderServiceController } from './order-service.controller';
 import {
   createGrpcClientOptions,
+  createRmqClientOptions,
   createTcpClientOptions,
   DataBaseModule,
   SERVICES,
@@ -44,6 +45,40 @@ import { ClientsModule } from '@nestjs/microservices';
             'INVENTORY_GRPC_PORT',
             'inventory',
             'inventory.proto',
+          ),
+      },
+      {
+        name: 'RABBITMQ_ORDER_SERVICE',
+        imports: [ConfigModule],
+        inject: [ConfigService],
+        useFactory: (config: ConfigService) =>
+          createRmqClientOptions(
+            config,
+            'RABBITMQ_URL',
+            'RABBITMQ_ORDER_QUEUE',
+          ),
+      },
+      {
+        name: 'RABBITMQ_NOTIFICATION',
+        imports: [ConfigModule],
+        inject: [ConfigService],
+        useFactory: (config: ConfigService) =>
+          createRmqClientOptions(
+            config,
+            'RABBITMQ_URL',
+            'RABBITMQ_NOTIFICATION_QUEUE',
+          ),
+      },
+      // RabbitMQ → Inventory queue
+      {
+        name: 'RABBITMQ_INVENTORY_QUEUE',
+        imports: [ConfigModule],
+        inject: [ConfigService],
+        useFactory: (config: ConfigService) =>
+          createRmqClientOptions(
+            config,
+            'RABBITMQ_URL',
+            'RABBITMQ_INVENTORY_QUEUE',
           ),
       },
     ]),

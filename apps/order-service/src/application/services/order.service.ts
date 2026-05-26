@@ -17,7 +17,12 @@ import {
 } from '../../domain/enums/order-status.enum';
 import { QueryOrderDto } from '../dtos/query-order.dto';
 import { UpdateStatusDto } from '../dtos/update-status.dto';
-import { SERVICES } from '@app/shared';
+import {
+  OrderEvents,
+  OrderStatusEvent,
+  RABBITMQ_SERVICES,
+  SERVICES,
+} from '@app/shared';
 import type { ClientGrpc } from '@nestjs/microservices';
 import { ClientProxy } from '@nestjs/microservices';
 import { InventoryGrpcService } from '@app/shared/interfaces/inventory-proto.interface';
@@ -43,6 +48,15 @@ export class OrderService implements OnModuleInit {
 
     @Inject(SERVICES.INVENTORY)
     private readonly inventoryClient: ClientGrpc,
+
+    @Inject(RABBITMQ_SERVICES.ORDER_SERVICE)
+    private readonly rabbitClient: ClientProxy,
+
+    @Inject(RABBITMQ_SERVICES.NOTIFICATION)
+    private readonly notificationClient: ClientProxy,
+
+    @Inject(RABBITMQ_SERVICES.INVENTORY_QUEUE)
+    private readonly inventoryQueueClient: ClientProxy,
   ) {}
 
   onModuleInit() {
@@ -99,6 +113,7 @@ export class OrderService implements OnModuleInit {
     const { id, status, reason, changedBy } = dto;
     const order = await this.orderRepo.findOne({
       where: { id },
+      relations: ['items'],
     });
 
     if (!order) {
@@ -122,7 +137,46 @@ export class OrderService implements OnModuleInit {
     await this.orderStatusLogRepo.save(log);
 
     order.status = status;
-    return await this.orderRepo.save(order);
+
+    const savedOrder = await this.orderRepo.save(order);
+
+    if (status === OrderStatus.CANCELLED) {
+      const cancelData = {
+        orderId: savedOrder.id,
+        userId: savedOrder.userId,
+        items: order.items.map((item) => ({
+          productId: item.productId,
+          quantity: item.quantity,
+        })),
+        reason,
+      };
+
+      // Gửi cho Notification → email hủy
+      this.notificationClient.emit(OrderEvents.Cancelled, cancelData);
+
+      // Gửi cho Inventory → release stock
+      this.inventoryQueueClient.emit(OrderEvents.Cancelled, cancelData);
+    } else if (status === OrderStatus.CONFIRMED) {
+      this.notificationClient.emit<string, OrderStatusEvent>(
+        OrderEvents.Confirmed,
+        {
+          orderId: savedOrder.id,
+          userId: savedOrder.userId,
+          status,
+        },
+      );
+    } else if (status === OrderStatus.DELIVERED) {
+      this.notificationClient.emit<string, OrderStatusEvent>(
+        OrderEvents.Delivered,
+        {
+          orderId: savedOrder.id,
+          userId: savedOrder.userId,
+          status,
+        },
+      );
+    }
+
+    return savedOrder;
   }
 
   async getStatusLogs(id: string): Promise<OrderStatusLog[]> {
@@ -187,7 +241,21 @@ export class OrderService implements OnModuleInit {
 
     console.log(order);
 
-    return this.orderRepo.save(order);
+    const savedOrder = await this.orderRepo.save(order);
+
+    this.notificationClient.emit(OrderEvents.Created, {
+      orderId: savedOrder.id,
+      userId: savedOrder.userId,
+      totalAmount: savedOrder.totalAmount,
+      items: orderItems.map((item) => ({
+        productId: item.productId,
+        productName: item.productName,
+        quantity: item.quantity,
+        price: item.price,
+      })),
+    });
+
+    return savedOrder;
   }
 
   private async getProductsByIds(ids: string[]): Promise<ProductResponse[]> {

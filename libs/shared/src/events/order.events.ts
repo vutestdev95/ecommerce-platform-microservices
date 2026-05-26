@@ -1,15 +1,34 @@
-export interface OrderCreatedEvent {
+export enum OrderEvents {
+  Created = 'order.created',
+  Confirmed = 'order.confirmed',
+  Cancelled = 'order.cancelled',
+  Delivered = 'order.delivered',
+}
+
+export interface OrderCreateEvent {
   orderId: string;
   userId: string;
-  items: { productId: string; quantity: number; price: number }[];
   totalAmount: number;
-  createdAt: Date;
+  items: Array<{
+    productId: string;
+    productName: string;
+    quantity: number;
+    price: number;
+  }>;
 }
-export interface OrderConfirmedEvent {
-  orderId: string;
-  transactionId: string;
-}
+
 export interface OrderCancelledEvent {
   orderId: string;
-  reason: string;
+  userId: string;
+  items: Array<{
+    productId: string;
+    quantity: number;
+  }>;
+  reason?: string;
+}
+
+export interface OrderStatusEvent {
+  orderId: string;
+  userId: string;
+  status: string;
 }
