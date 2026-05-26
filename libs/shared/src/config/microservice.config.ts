@@ -11,6 +11,12 @@ export enum SERVICES {
   NOTIFICATION = 'NOTIFICATION_SERVICE',
 }
 
+export enum RABBITMQ_SERVICES {
+  ORDER_SERVICE = 'RABBITMQ_ORDER_SERVICE',
+  NOTIFICATION = 'RABBITMQ_NOTIFICATION',
+  INVENTORY_QUEUE = 'RABBITMQ_INVENTORY_QUEUE',
+}
+
 export const createTcpClientOptions = (
   configService: ConfigService,
   hostKey: string,
@@ -43,3 +49,22 @@ export function createGrpcClientOptions(
     },
   };
 }
+
+export const createRmqClientOptions = (
+  configService: ConfigService,
+  urlKey: string,
+  queueKey: string,
+) => {
+  const url = configService.get<string>(urlKey) || 'amqp://localhost:5672';
+  const queue = configService.get<string>(queueKey) || 'default_queue';
+  return {
+    transport: Transport.RMQ as const,
+    options: {
+      urls: [url],
+      queue,
+      queueOptions: {
+        durable: true,
+      },
+    },
+  };
+};

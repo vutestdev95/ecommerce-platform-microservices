@@ -15,7 +15,9 @@ import { CreateInventoryDto } from './application/dtos/create-inventory.dto';
 import { UpdateStockDto } from './application/dtos/update-stock.dto';
 import { ReserveStockDto } from './application/dtos/reserve-stock.dto';
 import { Inventory } from './domain/entities/inventory.entity';
-import { GrpcMethod } from '@nestjs/microservices';
+import { EventPattern, GrpcMethod, Payload } from '@nestjs/microservices';
+import type { OrderCancelledEvent } from '@app/shared';
+import { OrderEvents } from '@app/shared';
 
 @Controller('inventory')
 export class InventoryServiceController {
@@ -90,6 +92,19 @@ export class InventoryServiceController {
   async grpcConfirm(data: ReserveStockDto) {
     const inv = await this.inventoryService.confirm(data);
     return this.toGrpcResponse(inv);
+  }
+
+  @EventPattern(OrderEvents.Cancelled)
+  async handleOrderCancelled(@Payload() data: OrderCancelledEvent) {
+    console.log(`🔄 Auto-releasing stock for cancelled order: ${data.orderId}`);
+    for (const item of data.items) {
+      await this.inventoryService.release({
+        productId: item.productId,
+        quantity: item.quantity,
+      });
+      console.log(`  ✅ Released ${item.quantity}x product ${item.productId}`);
+    }
+    console.log(`🔄 Stock release completed for order: ${data.orderId}`);
   }
 
   private toGrpcResponse(inv: Inventory) {

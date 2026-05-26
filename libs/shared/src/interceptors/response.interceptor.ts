@@ -21,7 +21,14 @@ export class ResponseInterceptor<T> implements NestInterceptor<
   intercept(
     context: ExecutionContext,
     next: CallHandler<T>,
-  ): Observable<SuccessResponse<T>> | Promise<Observable<SuccessResponse<T>>> {
+  ):
+    | Observable<SuccessResponse<T>>
+    | Promise<Observable<SuccessResponse<T>>>
+    | Observable<any> {
+    if (context.getType() !== 'http') {
+      return next.handle();
+    }
+
     return next.handle().pipe(
       map((responseData) => {
         const isObject =
